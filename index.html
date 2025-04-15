@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>GreenAPI UI</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #eee;
+      display: flex;
+      justify-content: center;
+      padding: 20px;
+    }
+    .main {
+      background: #fff;
+      padding: 15px;
+      border-radius: 10px;
+      width: 850px;
+      display: flex;
+      gap: 20px;
+      box-shadow: 0 0 5px #ccc;
+    }
+    .left, .right {
+      width: 50%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    input, textarea, button {
+      padding: 8px;
+      font-size: 14px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      resize: vertical;
+    }
+    button {
+      background: #2979ff;
+      color: white;
+      cursor: pointer;
+      border: none;
+    }
+    .error {
+      color: red;
+      font-size: 13px;
+    }
+    #responseBox {
+      height: 400px;
+      font-family: monospace;
+      background: #f5f5f5;
+    }
+  </style>
+</head>
+<body>
+
+<div class="main">
+  <div class="left">
+    <h3>GreenAPI Test</h3>
+    <input id="instanceId" placeholder="Instance ID">
+    <input id="authToken"  type="password" placeholder="API Token">
+
+    <button onclick="invokeGet('getSettings')">getSettings</button>
+    <button onclick="invokeGet('getStateInstance')">getStateInstance</button>
+
+    <input id="recipient" placeholder="Recipient number with country code (e.g. 78005553535) ">
+    <textarea id="textMessage" placeholder="Message"></textarea>
+    <button onclick="sendMessage()">sendMessage</button>
+
+    <input id="fileUrl" placeholder="File URL">
+    <button onclick="sendFileByUrl()">sendFileByUrl</button>
+
+    <div id="errorDisplay" class="error"></div>
+  </div>
+
+  <div class="right">
+    <h4>API Response</h4>
+    <textarea id="responseBox" readonly></textarea>
+  </div>
+</div>
+
+<script>
+  async function callGreenAPI(method, body) {
+    const id = document.getElementById('instanceId').value;
+    const token = document.getElementById('authToken').value;
+    const error = document.getElementById('errorDisplay');
+    const resBox = document.getElementById('responseBox');
+    
+    error.innerText = '';
+    resBox.value = '';
+
+    if (!id || !token) {
+      error.innerText = 'Missing instance ID or token';
+      return;
+    }
+
+    const url = `https://api.green-api.com/waInstance${id}/${method}/${token}`;
+    const options = body ? {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    } : {};
+
+    try {
+      const res = await fetch(url, options);
+      const data = await res.json();
+      resBox.value = JSON.stringify(data, null, 2);
+    } catch (e) {
+      error.innerText = 'Error: ' + e.message;
+    }
+  }
+
+  function invokeGet(method) {
+    callGreenAPI(method);
+  }
+
+  function sendMessage() {
+    const phone = document.getElementById('recipient').value;
+    const msg = document.getElementById('textMessage').value;
+    const error = document.getElementById('errorDisplay');
+
+    if (!phone || !msg) {
+      error.innerText = 'Enter phone number and message!';
+      return;
+    }
+
+    const data = {
+      chatId: phone + '@c.us',
+      message: msg
+    };
+
+    callGreenAPI('sendMessage', data);
+  }
+
+  function sendFileByUrl() {
+    const phone = document.getElementById('recipient').value;
+    const url = document.getElementById('fileUrl').value;
+    const error = document.getElementById('errorDisplay');
+
+    if (!phone || !url) {
+      error.innerText = 'Enter phone number and file URL!';
+      return;
+    }
+
+    const data = {
+      chatId: phone + '@c.us',
+      urlFile: url,
+      fileName: 'file'
+    };
+
+    callGreenAPI('sendFileByUrl', data);
+  }
+</script>
+
+</body>
+</html>
